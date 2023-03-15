@@ -77,6 +77,10 @@ def plot_original_ecg(ecg,t_start,t_end,fs):
         stop = n_valores/fs
         #tiempo = np.linspace(1,n_valores,n_valores)/fs
         tiempo = np.linspace(0,stop,n_valores)
+        
+        segundos = int(t_end - t_start)
+        factor = 2
+        plt.rcParams['figure.figsize'] = [segundos*5*factor, 2*factor]
 
         # Se llama la función plot_ecg para visualizar el ECG del sujeto
         titulo= "ECG ORIGINAL "

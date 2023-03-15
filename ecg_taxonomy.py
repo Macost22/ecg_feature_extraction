@@ -257,10 +257,10 @@ def heart_rate(x, fiducial, corru, Fs):
 
 
 if __name__ == '__main__':
-    path_signals = 'D:/Humat-Curie-Mini-ECG/humat_curie/ecg_ii_arrhythmia.json'
+    path_signals = '../ecg_ii_arrhythmia.json'
     signals = pd.read_json(path_signals)
 
-    signal = signals.loc[119, 'ECG_II']
+    signal = signals.loc[129, 'ECG_II']
     signal = np.array(signal, dtype=float).reshape((len(signal[0])))
     fs = 250
     fiducial_points_R, fiducial_points_nk, signal_filtered = ecg_delineation(signal, fs)
@@ -269,15 +269,18 @@ if __name__ == '__main__':
     import sys
     sys.path.append('../anomaly_detection_functions/Functions')
     from anomaly_detection_functions.Functions.AnomalyDetection_ECG import anomalydetection_ecg
+
     tvent = 0.8  # duración de la ventana en segundos
     AnoDet_ecg = anomalydetection_ecg(Fs=fs, tenvt=tvent)
     corru_ecg = AnoDet_ecg.fit_transform(signal)
 
     fiducial_points_R, fiducial_points_nk, signal_filtered = ecg_delineation(signal, fs)
-    #peaks_ecg, brad_ecg, taq_ecg, ritmo = heart_rate(signal, fiducial_points_nk, corru_ecg, Fs=fs)
+    peaks_ecg, brad_ecg, taq_ecg, ritmo = heart_rate(signal, fiducial_points_nk, corru_ecg, Fs=fs)
 
-    # taxonomy(fiducial_points_nk,signal,fs)
-    # taxonomy(fiducial_points_nk,signal,fs)
+    taxonomy(fiducial_points_R,signal,fs)
+
+    print('\n con neurokit')
+    taxonomy(fiducial_points_nk,signal,fs)
 
     # t_start= 0
     # t_end = 5
