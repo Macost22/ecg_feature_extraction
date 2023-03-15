@@ -1,7 +1,11 @@
 import pandas as pd
 import numpy as np
-from ecg_feature_extraction.fiducial_point_detection import ecg_delineation
 from scipy.signal import peak_prominences
+from ecg_feature_extraction.visualization_ecg import plot_ecg_fiducial_points, plot_original_ecg
+from ecg_feature_extraction.fiducial_point_detection import ecg_delineation
+import neurokit2 as nk
+from wfdb import processing
+
 
 # Duración de la onda P
 def duracion_P(paciente, fs):
@@ -141,11 +145,6 @@ def HR_mean(paciente, fs):
     return HR_mean, RR
 
 
-"""
-TAXONOMY
-"""
-
-
 def taxonomy(paciente, signal, fs):
     # La onda P debe durar menos de 120 ms
     duracionP = np.mean(duracion_P(paciente, fs))
@@ -229,29 +228,59 @@ def temporal_ecg_features(fiducial_points, signal, fs):
     # HRmean esta normal entre 60 y 100 ms, RR dura entre 600 y 1200 ms
     HRmean, RR = HR_mean(fiducial_points, fs)
 
-    temporal_features = {'duracion P [ms]': round(duracionP, 2), 'amplitud P [mV]': round(amplitudP, 2),
-                         'duracion QRS [ms]': round(duracionQRS, 2), 'amplitud T [mV]': round(amplitudT, 2),
-                         'duracion PR [ms]': round(duracionPR, 2), 'Heart rate [bpm]': round(HRmean, 2)}
+    temporal_features = {'Duracion P [ms]': round(duracionP, 2), 'Amplitud P [mV]': round(amplitudP, 2),
+                         'Duracion QRS [ms]': round(duracionQRS, 2), 'Amplitud T [mV]': round(amplitudT, 2),
+                         'Duracion PR [ms]': round(duracionPR, 2), 'Heart rate [bpm]': round(HRmean, 2)}
 
     return temporal_features
 
 
-def load_data_arrhythmia(file_path):
-    ecg = pd.read_csv(file_path, sep=" ", index_col=0)
-    # Se transponen los datos (individuo, observaciones)
-    ecg = ecg.transpose()
-    # Se modifican los índices para que sean de 0 a N
-    ecg.index = list(range(len(ecg)))
-    return ecg
+def heart_rate(x, fiducial, corru, Fs):
+    peaks = np.zeros(x.shape)
+    peaks[fiducial['ECG_R_Peaks']] = 1
+
+    corrected_peak_inds = np.where(peaks == 1)[0]
+    ritmo_ecg = processing.compute_hr(len(x), corrected_peak_inds, Fs)
+    ritmo_ecg_nk = nk.ecg_rate(corrected_peak_inds,sampling_rate=250)
+
+    peaks[corru == 1] = 0
+
+    brad = np.nan * np.ones(x.shape)
+    brad[ritmo_ecg < 40] = 1
+    brad[corru == 1] = np.NaN
+
+    taq = np.nan * np.ones(x.shape)
+    taq[ritmo_ecg > 140] = 1
+    taq[corru == 1] = np.NaN
+
+    return peaks, brad, taq, ritmo_ecg
 
 
 if __name__ == '__main__':
-    # Estos tiene una fs= 250,  Wn_low = 60 y Wn_high = 0.5
-    path_arritmia = 'C:/Users/melis/Desktop/Bioseñales/MIMIC/MIMIC_arritmia.txt'
-    signals = load_data_arrhythmia(path_arritmia)
-    # ver 1 en 0 y 5000
+    path_signals = 'D:/Humat-Curie-Mini-ECG/humat_curie/ecg_ii_arrhythmia.json'
+    signals = pd.read_json(path_signals)
 
-    signal = signals.iloc[8]
+    signal = signals.loc[119, 'ECG_II']
+    signal = np.array(signal, dtype=float).reshape((len(signal[0])))
     fs = 250
     fiducial_points_R, fiducial_points_nk, signal_filtered = ecg_delineation(signal, fs)
-    features = temporal_ecg_features(fiducial_points_R, signal_filtered, fs)
+    #features = temporal_ecg_features(fiducial_points_R, signal_filtered, fs)
+
+    import sys
+    sys.path.append('../anomaly_detection_functions/Functions')
+    from anomaly_detection_functions.Functions.AnomalyDetection_ECG import anomalydetection_ecg
+    tvent = 0.8  # duración de la ventana en segundos
+    AnoDet_ecg = anomalydetection_ecg(Fs=fs, tenvt=tvent)
+    corru_ecg = AnoDet_ecg.fit_transform(signal)
+
+    fiducial_points_R, fiducial_points_nk, signal_filtered = ecg_delineation(signal, fs)
+    #peaks_ecg, brad_ecg, taq_ecg, ritmo = heart_rate(signal, fiducial_points_nk, corru_ecg, Fs=fs)
+
+    # taxonomy(fiducial_points_nk,signal,fs)
+    # taxonomy(fiducial_points_nk,signal,fs)
+
+    # t_start= 0
+    # t_end = 5
+    # import matplotlib
+    # matplotlib.use("Qt5Agg")
+    # plot_ecg_fiducial_points(fiducial_points_nk,t_start,t_end,fs,'neurokit')
