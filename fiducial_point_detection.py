@@ -474,7 +474,10 @@ def ecg_delineation(signal, fs):
     fiducial_r = find_fiducial_points(signal_normalized, fs, dic_parameters)
 
     # Extracción de puntos fiduciales de la señal con algoritmo de neurokit2
-    fiducial_nk = find_fiducial_points_neurokit2(signal_normalized, dic_parameters['gr_r'], fs)
+    try:
+        fiducial_nk = find_fiducial_points_neurokit2(signal_normalized, dic_parameters['gr_r'], fs)
+    except:
+        fiducial_nk = fiducial_r
 
     return fiducial_r, fiducial_nk, signal_filtered
 
@@ -516,16 +519,38 @@ if __name__ == '__main__':
     df_arritmia = pd.read_json(path_arritmia)
 
     fs=250
-    taquicardia=df_arritmia.loc[118,'ECG_II'][0]
+    leng=0.3*fs
+    taquicardia=df_arritmia.loc[239,'ECG_II'][0]
+    """
+    signal=taquicardia
+    n_valores = len(signal)
+    stop = n_valores / fs
+    tiempo = np.linspace(0, stop, n_valores)
+
+    # Extract R-peaks locations
+    _, locs_R = nk.ecg_peaks(signal, sampling_rate=fs)
+    print(locs_R)
+
+    # Delineate
+    if locs_R["ECG_R_Peaks"].size == 0:
+        locs_R = find_R(signal, 0.8, 0.3 * fs, fs)
+        locs_R = {'ECG_R_Peaks': locs_R, 'sampling_rate': fs}
+
+    signal_ecg, waves_peak = nk.ecg_delineate(signal, locs_R, sampling_rate=fs, method="dwt")
+
+    waves_peak['ECG_R_Peaks'] = locs_R['ECG_R_Peaks']
+    waves_peak['ECG'] = signal
+    waves_peak['Tiempo'] = tiempo
+    """
 
     fiducial_points_R, fiducial_points_nk,signal_filtered = ecg_delineation(signal=taquicardia, fs=250)
 
     #import matplotlib
     #matplotlib.use("Qt5Agg")
-    t_start, t_end = 0,2
-    titulo1 = 'Neurokit'
-    titulo2 = 'Algoritmo R'
-    plot_ecg_fiducial_points(fiducial_points_nk, t_start, t_end, fs, titulo1)
-    plt.show()
-    plot_ecg_fiducial_points(fiducial_points_R, t_start, t_end, fs, titulo2)
-    plt.show()
+    #t_start, t_end = 0,2
+    #titulo1 = 'Neurokit'
+    #titulo2 = 'Algoritmo R'
+    #plot_ecg_fiducial_points(fiducial_points_nk, t_start, t_end, fs, titulo1)
+    #plt.show()
+    #plot_ecg_fiducial_points(fiducial_points_R, t_start, t_end, fs, titulo2)
+    #plt.show()

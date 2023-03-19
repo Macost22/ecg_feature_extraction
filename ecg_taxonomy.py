@@ -174,31 +174,33 @@ def taxonomy(paciente, signal, fs):
     # HRmean esta normal entre 60 y 100 ms, RR dura entre 600 y 1200 ms
     HRmean, RR = HR_mean(paciente, fs)
     print('Frecuencia cardíaca = {}'.format(round(HRmean, 2)))
-    print(HRmean)
+
+
 
     # El intervalo RR debe ser regular
     diffRR = np.diff(RR)
     sano = True
+    print('\nSe encontró:')
 
     if duracionPR > 200:
-        print('Bloqueo AV \n')
+        print('- Bloqueo AV')
         sano = False
 
     if (amplitudP1 - amplitudP2) > 0.05:
-        print('Latido atrial prematuro \n')
+        print('- Latido atrial prematuro')
         sano = False
 
     if duracionQRS > 120:
-        print('Bloqueo de rama \n')
+        print('- Bloqueo de rama')
         sano = False
 
     if HRmean < 60:
-        print('Bradicardia \n')
+        print('- Bradicardia')
 
     if HRmean > 100:
-        print('Taquicardia')
+        print('- Taquicardia')
         if duracionQRS < 120:
-            print('Taquicardia supraventricular \n')
+            print('   -Taquicardia supraventricular')
         sano = False
 
     if sano:
@@ -260,27 +262,27 @@ if __name__ == '__main__':
     path_signals = '../ecg_ii_arrhythmia.json'
     signals = pd.read_json(path_signals)
 
-    signal = signals.loc[129, 'ECG_II']
+    signal = signals.loc[239, 'ECG_II']
     signal = np.array(signal, dtype=float).reshape((len(signal[0])))
     fs = 250
     fiducial_points_R, fiducial_points_nk, signal_filtered = ecg_delineation(signal, fs)
     #features = temporal_ecg_features(fiducial_points_R, signal_filtered, fs)
 
-    import sys
-    sys.path.append('../anomaly_detection_functions/Functions')
-    from anomaly_detection_functions.Functions.AnomalyDetection_ECG import anomalydetection_ecg
+    #import sys
+    #sys.path.append('../Humath/Functions')
+    #from Humath.Functions.AnomalyDetection_ECG import anomalydetection_ecg
 
-    tvent = 0.8  # duración de la ventana en segundos
-    AnoDet_ecg = anomalydetection_ecg(Fs=fs, tenvt=tvent)
-    corru_ecg = AnoDet_ecg.fit_transform(signal)
+    #tvent = 0.8  # duración de la ventana en segundos
+    #AnoDet_ecg = anomalydetection_ecg(Fs=fs, tenvt=tvent)
+    #corru_ecg = AnoDet_ecg.fit_transform(signal)
 
-    fiducial_points_R, fiducial_points_nk, signal_filtered = ecg_delineation(signal, fs)
-    peaks_ecg, brad_ecg, taq_ecg, ritmo = heart_rate(signal, fiducial_points_nk, corru_ecg, Fs=fs)
+    #fiducial_points_R, fiducial_points_nk, signal_filtered = ecg_delineation(signal, fs)
+    #peaks_ecg, brad_ecg, taq_ecg, ritmo = heart_rate(signal, fiducial_points_nk, corru_ecg, Fs=fs)
 
-    taxonomy(fiducial_points_R,signal,fs)
+    #taxonomy(fiducial_points_R,signal,fs)
 
-    print('\n con neurokit')
-    taxonomy(fiducial_points_nk,signal,fs)
+    #print('\n con neurokit')
+    #taxonomy(fiducial_points_nk,signal,fs)
 
     # t_start= 0
     # t_end = 5
